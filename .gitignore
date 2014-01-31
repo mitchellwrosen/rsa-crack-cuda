@@ -1,0 +1,4 @@
+*.gch
+*.o
+keys.txt
+main
