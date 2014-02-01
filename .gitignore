@@ -2,3 +2,4 @@
 *.o
 keys.txt
 main
+result.out
