@@ -9,12 +9,12 @@
 
 #include "integer.h"
 
-#define BLOCK_SIZE 32
+#define BLOCK_DIM 32
 #define NUM_KEYS 200000
 
-#define FILENAME "keys.txt"
+#define TILE_DIM 192
 
-static long int matrix_length = 625000; // 200000 * 200000 / 2 / 32
+#define FILENAME "keys.txt"
 
 /* Mmaps the file with name |filename| and returns the char array, and puts
  * its size in memory into |length|. */
@@ -42,47 +42,62 @@ char *map_file(const char *filename, size_t *length) {
 }
 
 /* kernel */
-__global__ void cuda_factorKeys(const integer *array, int32_t *h_matrix) {
-  int col = blockIdx.x * BLOCK_SIZE + threadIdx.x;
-  int row = blockIdx.y * BLOCK_SIZE + threadIdx.y;
+__global__ void cuda_factorKeys(const integer *array, bool *h_matrix, int tile_row, int tile_col) {
+  int col = blockIdx.x * BLOCK_DIM + threadIdx.x;
+  int row = blockIdx.y * BLOCK_DIM + threadIdx.y;
 
   if (row < NUM_KEYS && col < NUM_KEYS) {
-    if (integer_coprime(array[col], array[row])) {
+    if (!integer_coprime(array[col], array[row])) {
       // update matrix
     }
   }
 }
 
 /* host function that calls kernel, returns bit matrix*/
-void host_factorKeys(const integer *h_array, int32_t *h_matrix) {
+void host_factorKeys(const integer *h_array, bool **h_matrices, const int num_tiles) {
+  int tile_size = TILE_DIM * TILE_DIM * sizeof(bool);
   integer *d_array;
-  int *d_matrix;
-
-  int grid_dim = (BLOCK_SIZE - 1) / 32 + 1;
 
   cudaMalloc(&d_array, NUM_KEYS * sizeof(integer));
-  cudaMalloc(&d_matrix, matrix_length * sizeof(int));
 
   cudaMemcpy(d_array, h_array, NUM_KEYS * sizeof(integer), cudaMemcpyHostToDevice);
 
-  dim3 threads(BLOCK_SIZE, BLOCK_SIZE);
-  dim3 grid(grid_dim, grid_dim);
+  bool **d_matrices;
+  size_t pitch;
+  cudaMallocPitch(&d_matrices, &pitch, TILE_DIM * sizeof(bool), TILE_DIM);
 
-  cuda_factorKeys<<<grid, threads>>>(d_array, d_matrix);
+  dim3 threads(BLOCK_DIM, BLOCK_DIM);
+  dim3 grid(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
 
-  cudaMemcpy(h_matrix, d_matrix, matrix_length * sizeof(int), cudaMemcpyDeviceToHost);
+  for (int i = 0; i < num_tiles; ++i) {
+    for (int j = i; j < num_tiles; ++j) {
+      cuda_factorKeys<<<grid, threads>>>(d_array, d_matrices[i*pitch + j], i, j);
+      cudaMemcpy(h_matrices[i*TILE_DIM + j], d_matrices[i*pitch + j], tile_size, cudaMemcpyDeviceToHost);
+    }
+  }
+
+  cudaFree(d_array);
+  cudaFree(d_matrices);
 }
 
 int main(int argc, char **args) {
   integer *array = (integer *) malloc(NUM_KEYS * sizeof(integer));
-  int32_t *bit_matrix = (int32_t *) malloc(matrix_length * sizeof(int32_t));
+
+  int num_tiles = (NUM_KEYS - 1) / TILE_DIM + 1;
+  int total_num_tiles = num_tiles * num_tiles;
+
+  bool **matrices = (bool **) malloc(total_num_tiles * sizeof(bool *));
+  for (int i = 0; i < total_num_tiles; ++i) {
+    matrices[i] = (bool *) malloc(TILE_DIM * TILE_DIM * sizeof(bool));
+  }
+
   size_t file_size;
 
   char *file_string = map_file(FILENAME, &file_size);
 
   // parse file
 
-  // host_factorKeys(array, bit_matrix);
+  host_factorKeys(array, matrices, num_tiles);
 
   // calculate private keys
 
@@ -91,7 +106,6 @@ int main(int argc, char **args) {
   munmap(file_string, file_size);
 
   free(array);
-  free(bit_matrix);
 
   return 0;
 }
