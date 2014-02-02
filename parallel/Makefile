@@ -4,7 +4,7 @@ LDFLAGS=-arch=sm_21
 
 all: main
 
-main: main.o integer.o
+main: main.o kernel.o integer.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
 %.o: %.cu
