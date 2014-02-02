@@ -64,8 +64,8 @@ static void packBits(integer output, int* outputIndex_orig, int* bitIndex_orig, 
 // Read an integer from a stream. Parse nine characters at a time, from right to
 // left, packing bits accordingly. Nine characters because it's guaranteed to
 // fit in a single int32_t.
-void integer_fread(integer *output, char** lineptr, size_t* n, FILE* stream) {
-   memset(*output, '\0', sizeof(*output));
+void integer_fread(integer output, char** lineptr, size_t* n, FILE* stream) {
+   memset(output, '\0', sizeof(output));
    ssize_t numBytes = getline_(lineptr, n, stream);
 
    int lineIndex = numBytes - 9;  // current index into line
@@ -82,7 +82,7 @@ void integer_fread(integer *output, char** lineptr, size_t* n, FILE* stream) {
          lineIndex = 0;
 
       int32_t segment = atoi(*lineptr + lineIndex);
-      packBits(*output, &outputIndex, &bitIndex, segment);
+      packBits(output, &outputIndex, &bitIndex, segment);
 
       (*lineptr)[lineIndex] = '\0'; // end-of-string marker for next atoi()
       lineIndex -= 9;         // move index to parse next 9 bytes.
@@ -95,9 +95,9 @@ __device__ void integer_copy(integer output, const integer input) {
       output[i] = input[i];
 }
 
-__device__ void integer_fromInt(integer *output, const int32_t input) {
-   memset(*output, '\0', sizeof(*output) - sizeof(int32_t)); // Zero all but lowest order byte
-   (*output)[N-2] = input;
+__device__ void integer_fromInt(integer output, const int32_t input) {
+   memset(output, '\0', sizeof(output) - sizeof(int32_t)); // Zero all but lowest order byte
+   output[N-2] = input;
 }
 
 // Bit manipulation functions.
