@@ -38,9 +38,9 @@ void host_factorKeys(const integer *h_array, int32_t *h_bitMatrix, const int num
   // allocate (and initialize to 0) bit matrix
   int32_t *d_bitMatrix;
   size_t d_pitch;
-  size_t h_pitch = BIT_MATRIX_DIM * sizeof(int32_t);
-  cudaSafe(cudaMallocPitch(&d_bitMatrix, &d_pitch, h_pitch, BIT_MATRIX_DIM));
-  cudaSafe(cudaMemset2D(d_bitMatrix, d_pitch, 0, h_pitch, BIT_MATRIX_DIM));
+  size_t h_pitch = BIT_MATRIX_WIDTH * sizeof(int32_t);
+  cudaSafe(cudaMallocPitch(&d_bitMatrix, &d_pitch, h_pitch, NUM_KEYS));
+  cudaSafe(cudaMemset2D(d_bitMatrix, d_pitch, 0, h_pitch, NUM_KEYS));
 
   dim3 threads(BLOCK_DIM, BLOCK_DIM);
   dim3 grid(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
@@ -53,7 +53,7 @@ void host_factorKeys(const integer *h_array, int32_t *h_bitMatrix, const int num
     }
   }
 
-  cudaSafe(cudaMemcpy2D(h_bitMatrix, h_pitch, d_bitMatrix, d_pitch, d_pitch, BIT_MATRIX_DIM, cudaMemcpyDeviceToHost));
+  cudaSafe(cudaMemcpy2D(h_bitMatrix, h_pitch, d_bitMatrix, d_pitch, d_pitch, NUM_KEYS, cudaMemcpyDeviceToHost));
   cudaSafe(cudaFree(d_array));
   cudaSafe(cudaFree(d_bitMatrix));
 }

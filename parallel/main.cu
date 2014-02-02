@@ -1,5 +1,4 @@
 #include <stdlib.h>
-
 #include "kernel.h"
 
 #define FILENAME "keys.txt"
@@ -9,7 +8,7 @@ int main(int argc, char **args) {
 
   int numTiles = (NUM_KEYS - 1) / TILE_DIM + 1;
 
-  int32_t *bitMatrix = (int32_t *) malloc(BIT_MATRIX_DIM * BIT_MATRIX_DIM * sizeof(int32_t));
+  int32_t *bitMatrix = (int32_t *) malloc(NUM_KEYS * BIT_MATRIX_WIDTH * sizeof(int32_t));
 
   // parse file
 
