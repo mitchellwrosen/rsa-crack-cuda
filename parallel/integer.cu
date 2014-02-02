@@ -7,9 +7,9 @@
 // like getline(), but don't include the newline in the resulting line, or in
 // the return value.
 static ssize_t getline_(char** lineptr, size_t* n, FILE* stream) {
-   ssize_t numBytes = getline(line, n, stream);
-   if (line[numBytes-1] == '\n') {
-      line[numBytes-1] = '\0';
+   ssize_t numBytes = getline(lineptr, n, stream);
+   if ((*lineptr)[numBytes-1] == '\n') {
+      (*lineptr)[numBytes-1] = '\0';
       numBytes--;
    }
    return numBytes;
@@ -66,7 +66,7 @@ static void packBits(integer output, int* outputIndex_orig, int* bitIndex_orig, 
 // fit in a single int32_t.
 void integer_fread(integer output, char** lineptr, size_t* n, FILE* stream) {
    memset(output, '\0', sizeof(output));
-   ssize_t numBytes = getline_(line, n, stream);
+   ssize_t numBytes = getline_(lineptr, n, stream);
 
    int lineIndex = numBytes - 9;  // current index into line
    int outputIndex = 0;           // current index into |output|
@@ -81,10 +81,10 @@ void integer_fread(integer output, char** lineptr, size_t* n, FILE* stream) {
       if (lineIndex < 0)
          lineIndex = 0;
 
-      int32_t segment = atoi(line + lineIndex);
+      int32_t segment = atoi(*lineptr + lineIndex);
       packBits(output, &outputIndex, &bitIndex, segment);
 
-      line[lineIndex] = '\0'; // end-of-string marker for next atoi()
+      (*lineptr)[lineIndex] = '\0'; // end-of-string marker for next atoi()
       lineIndex -= 9;         // move index to parse next 9 bytes.
    }
 }
