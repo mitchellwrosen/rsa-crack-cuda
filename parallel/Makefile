@@ -1,6 +1,6 @@
 CC=nvcc
-CFLAGS=-O3 -g -rdc=true -arch=sm_21 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35
-LDFLAGS=-arch=sm_21
+CFLAGS=-O3 -g -rdc=true -gencode arch=compute_30,code=sm_30
+LDFLAGS=-arch=sm_30
 
 all: main
 
