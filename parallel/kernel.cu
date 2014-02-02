@@ -48,6 +48,8 @@ void host_factorKeys(const integer *h_array, int32_t *h_bitMatrix, const int num
   for (int i = 0; i < numTiles; ++i) {
     for (int j = i; j < numTiles; ++j) {
       cuda_factorKeys<<<grid, threads>>>(d_array, d_bitMatrix, d_pitch, i, j);
+      cudaSafe(cudaPeekAtLastError());
+      cudaSafe(cudaDeviceSynchronize());
     }
   }
 
