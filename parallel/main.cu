@@ -12,7 +12,7 @@
 #define BLOCK_DIM 32
 #define NUM_KEYS 200000
 
-#define TILE_DIM 192
+#define TILE_DIM 5000
 
 #define FILENAME "keys.txt"
 
@@ -62,22 +62,24 @@ void host_factorKeys(const integer *h_array, bool **h_matrices, const int num_ti
 
   cudaMemcpy(d_array, h_array, NUM_KEYS * sizeof(integer), cudaMemcpyHostToDevice);
 
-  bool **d_matrices;
-  size_t pitch;
-  cudaMallocPitch(&d_matrices, &pitch, TILE_DIM * sizeof(bool), TILE_DIM);
-
   dim3 threads(BLOCK_DIM, BLOCK_DIM);
   dim3 grid(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
 
+  bool *matrix_ptr = h_matrices[0];
+
   for (int i = 0; i < num_tiles; ++i) {
     for (int j = i; j < num_tiles; ++j) {
-      cuda_factorKeys<<<grid, threads>>>(d_array, d_matrices[i*pitch + j], i, j);
-      cudaMemcpy(h_matrices[i*TILE_DIM + j], d_matrices[i*pitch + j], tile_size, cudaMemcpyDeviceToHost);
+      bool *d_matrix;
+      cudaMalloc(&d_matrix, TILE_DIM * TILE_DIM * sizeof(bool));
+
+      cuda_factorKeys<<<grid, threads>>>(d_array, d_matrix, i, j);
+      cudaMemcpy(matrix_ptr++, d_matrix, tile_size, cudaMemcpyDeviceToHost);
+
+      cudaFree(d_matrix);
     }
   }
 
   cudaFree(d_array);
-  cudaFree(d_matrices);
 }
 
 int main(int argc, char **args) {
