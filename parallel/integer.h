@@ -2,12 +2,16 @@
 #define INTEGER_H_
 
 #include <stdint.h>
+#include <stdio.h>
 
 #define N 32 // Set integer width at compile time to avoid other inefficiencies
 
 typedef int32_t integer[N];
 
-// Misc. initialization functions
+// I/O functions
+void integer_fread(integer output, FILE* stream);
+
+// Initialization functions
 __device__ void integer_copy(integer output, const integer input);     // output = input
 __device__ void integer_fromInt(integer output, const int32_t input);  // output = input
 
