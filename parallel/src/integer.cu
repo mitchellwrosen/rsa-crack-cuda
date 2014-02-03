@@ -72,7 +72,7 @@ void integer_fread(integer output, char** lineptr, size_t* n, FILE* stream) {
    int outputIndex = 0;           // current index into |output|
    int bitIndex = 0;              // next bit index to pack in |output| at outputIndex
 
-   // Strange condition, but it works: keep subtracting nine from lineIndex 
+   // Strange condition, but it works: keep subtracting nine from lineIndex
    // until there are no more characters to parse. It's okay to go negative,
    // say, to -7, which simply means that there are only two characters left.
    // After parsing everything, though, the final index will be -9.
