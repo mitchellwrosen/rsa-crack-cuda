@@ -1,14 +1,29 @@
-CC=nvcc
-NVFLAGS=-O3 -g -rdc=true -gencode arch=compute_30,code=sm_30
-LDFLAGS=-arch=sm_30
+UNAME := $(shell uname)
+
+NVCC=nvcc
+GPP=g++
+SOURCEDIR=src/
+
+GPPFLAGS=-O3 -g
+
+ifeq ($(UNAME), Darwin)
+NVFLAGS=-O3 -g -arch=sm_30
+LDFLAGS=-L. -L/usr/local/cuda/lib -lcudart -lgmp
+else
+NVFLAGS=-O3 -g -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35
+LDFLAGS=-L. -L/usr/local/cuda/lib64 -L/home/clupo/gmplib -lcudart -lgmp
+endif
 
 all: main
 
-main: main.o kernel.o integer.o
-	$(CC) $(LDFLAGS) $^ -o $@
+main: main.o integer.o
+	$(GPP) $(LDFLAGS) $^ -o $@
 
-%.o: %.cu
-	$(CC) $(NVFLAGS) -c $< -o $@
+main.o: $(SOURCEDIR)main.cpp
+	$(GPP) $(GPPFLAGS) -c $< -o $@
+
+integer.o: $(SOURCEDIR)integer.cu $(SOURCEDIR)integer.h
+	$(NVCC) $(NVFLAGS) -c $< -o $@
 
 clean:
 	rm -f *.o main
