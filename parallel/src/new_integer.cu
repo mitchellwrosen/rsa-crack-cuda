@@ -4,22 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define cudaSafe(ans) { cudaAssert((ans), __FILE__, __LINE__); }
-
-static integer *d_array;
-static int32_t *d_bitMatrix;
-static size_t h_pitch;
-static size_t d_pitch;
-static int bitMatrixWidth;
-
-/* wrapper assert function to check for cuda errors */
-inline void cudaAssert(cudaError_t code, char *file, int line, bool abort=true) {
-  if (code != cudaSuccess) {
-    fprintf(stderr,"cudaAssert: %s %s %d\n", cudaGetErrorString(code), file, line);
-    if (abort)
-      exit(code);
-  }
-}
+#include "cuda_utils.h"
 
 // Initialization functions
 __device__ void integer_copy(integer output, const integer input) {
@@ -146,37 +131,4 @@ __global__ void cuda_factorKeys(const integer *array, int32_t *bitMatrix, size_t
 
     bitMatrix_row[bitMatrix_col] |= 1 << bitMatrix_offset;
   }
-}
-
-/* host function that calls kernel, returns bit matrix */
-void factorKeys(integer *h_array, int32_t *h_bitMatrix, const int numKeys, const int tileRow, const int tileCol) {
-  cudaSafe(cudaMemset2D(d_bitMatrix, d_pitch, 0, h_pitch, TILE_DIM));
-
-  dim3 threads(BLOCK_DIM, BLOCK_DIM);
-  dim3 grid(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
-
-  cuda_factorKeys<<<grid, threads>>>(d_array, d_bitMatrix, d_pitch, tileRow, tileCol, numKeys);
-  cudaSafe(cudaPeekAtLastError());
-  cudaSafe(cudaDeviceSynchronize());
-
-  cudaSafe(cudaMemcpy2D(h_bitMatrix, h_pitch, d_bitMatrix, d_pitch, h_pitch, TILE_DIM, cudaMemcpyDeviceToHost));
-}
-
-int allocateGPU(integer *h_array, int32_t **h_bitMatrix, const int numKeys) {
-  cudaSafe(cudaMalloc(&d_array, numKeys * sizeof(integer)));
-  cudaSafe(cudaMemcpy(d_array, h_array, numKeys * sizeof(integer), cudaMemcpyHostToDevice));
-
-  bitMatrixWidth = (TILE_DIM - 1) / 32 + 1;
-  *h_bitMatrix = (int32_t *) malloc(TILE_DIM * bitMatrixWidth * sizeof(int32_t));
-  h_pitch = bitMatrixWidth * sizeof(int32_t);
-
-  cudaSafe(cudaMallocPitch(&d_bitMatrix, &d_pitch, h_pitch, TILE_DIM));
-  cudaSafe(cudaMemset2D(d_bitMatrix, d_pitch, 0, h_pitch, TILE_DIM));
-
-  return (numKeys - 1) / TILE_DIM + 1;
-}
-
-void freeGPU() {
-  cudaSafe(cudaFree(d_array));
-  cudaSafe(cudaFree(d_bitMatrix));
 }
