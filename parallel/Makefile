@@ -7,20 +7,23 @@ SOURCEDIR=src/
 
 ifeq ($(UNAME), Darwin)
 NVFLAGS=-O3 -g -arch=sm_30
-LDFLAGS=-L. -L/usr/local/cuda/lib -lcudart -lgmp
-GPPFLAGS=-O3 -g
+LDFLAGS=-L. -L/usr/local/cuda/lib -lcudart -lgmp -I.
+GPPFLAGS=-O3 -g -Wno-write-strings -I/usr/local/cuda/include
 else
 NVFLAGS=-O3 -g -arch=sm_20
-LDFLAGS=-L. -L/usr/local/cuda/lib64 -L/home/clupo/gmp/lib -lcudart -lgmp
-GPPFLAGS=-O3 -g -I/home/clupo/gmp/include
+LDFLAGS=-L. -L/usr/local/cuda/lib64 -L/home/clupo/gmp/lib -lcudart -lgmp -I.
+GPPFLAGS=-O3 -g -Wno-write-strings -I/home/clupo/gmp/include -I/usr/local/cuda/include
 endif
 
 all: main
 
-main: main.o integer.o
+main: main.o bit_matrix.o integer.o
 	$(GPP) $(LDFLAGS) $^ -o $@
 
 main.o: $(SOURCEDIR)main.cpp
+	$(GPP) $(GPPFLAGS) -c $< -o $@
+
+bit_matrix.o: $(SOURCEDIR)bit_matrix.cpp
 	$(GPP) $(GPPFLAGS) -c $< -o $@
 
 integer.o: $(SOURCEDIR)integer.cu $(SOURCEDIR)integer.h

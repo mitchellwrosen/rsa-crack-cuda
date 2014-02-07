@@ -1,6 +1,9 @@
 #ifndef BIT_MATRIX_H_
 #define BIT_MATRIX_H_
 
+#include <stdint.h>
+#include <stdlib.h>
+
 class BitMatrix {
  public:
   BitMatrix(int size);
@@ -21,7 +24,7 @@ class BitMatrix {
   size_t pitch_;     // in bytes
 
   int32_t* data_;
-}
+};
 
 #endif  // BIT_MATRIX_H_
 
