@@ -10,6 +10,7 @@
 #include "bit_matrix.h"
 #include "cuda_utils.h"
 #include "integer.h"
+#include "rsa.h"
 
 #define OUTPUT_FILENAME "result.out"
 
@@ -106,15 +107,31 @@ inline size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime, co
 }
 
 inline void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int tileRow, int tileCol) {
+  mpz_t n1, n2, p, q1, q2, d1, d2;
+  mpz_inits(n1, n2, p, q1, q2, d1, d2, '\0');
+
   for (int i = 0; i < notCoprime.size()-1; ++i) {
     for (int j = i; j < notCoprime.size(); ++j) {
       if (notCoprime.bitSet(i, j)) {
-        integer key1 = keys[tileRow * TILE_DIM + i];
-        integer key2 = keys[tileCol * TILE_DIM + j];
+        integerToMpz(n1, keys[tileRow * TILE_DIM + i]);
+        integerToMpz(n2, keys[tileCol * TILE_DIM + j]);
 
-        // calculate key
+        mpz_gcd(p, n1, n2);
+        mpz_divexact(q1, n1, p);
+        mpz_divexact(q2, n2, p);
+        rsa_compute_d(d1, n1, p, q1);
+        rsa_compute_d(d2, n2, p, q2);
+        // output d1,d2
       }
     }
+  }
+}
+
+void integerToMpz(mpz_t output, integer input) {
+  mpz_add_ui(output, output, input[N-1]);
+  for (int i = N-2; i >= 0; --i) {
+    mpz_mul_2exp(output, output, 32);      // output <<= 32
+    mpz_add_ui(output, output, input[i]);  // set low word
   }
 }
 
