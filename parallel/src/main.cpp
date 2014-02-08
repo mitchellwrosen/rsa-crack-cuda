@@ -19,6 +19,9 @@
 
 using namespace std;
 
+/**
+ * Helper function to read keys from txt file using GMP library
+ */
 inline void getKeysFromFile(const char *filename, integer *keys, int num) {
   FILE *f = fopen(filename, "r");
   mpz_t n;
@@ -52,6 +55,10 @@ int main(int argc, char **argv) {
   dim3 blockDim(32, BLOCK_DIM, BLOCK_DIM);
   int num_tiles = NUM_TILES(numKeys);
 
+  /**
+   * Group key pairs into square tiles to fit GPU resource usage limits.
+   * For each tile: clear out the bit matrix, run GCD kernel, calculate private keys.
+   */
   for (int i = 0; i < num_tiles; ++i) {
     for (int j = i; j < num_tiles; ++j) {
       cudaSafe(cudaMemset2D(d_notCoprime, pitch, 0, BIT_MATRIX_WIDTH * sizeof(uint32_t), TILE_DIM));

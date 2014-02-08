@@ -10,7 +10,11 @@ __device__ void shiftL1(volatile uint32_t *x);
 __device__ int geq(volatile uint32_t *x, volatile uint32_t *y);
 __device__ void cuSubtract(volatile uint32_t *x, volatile uint32_t *y, volatile uint32_t *z);
 
-/* kernel */
+/**
+ * Kernel function.
+ * See "PARIS: A Parallel RSA-Prime Inspection Tool"
+ * Author: Joseph White
+ */
 __global__ void cuda_factorKeys(const integer *keys, uint32_t *notCoprime, size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
   __shared__ volatile uint32_t x[BLOCK_DIM][BLOCK_DIM][32];
   __shared__ volatile uint32_t y[BLOCK_DIM][BLOCK_DIM][32];
@@ -47,6 +51,9 @@ void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint32_t* d_notC
           pitch, tileRow, tileCol, tileDim, numKeys);
 }
 
+/**
+ * Binary GCD algo
+ */
 __device__ void gcd(volatile uint32_t *x, volatile uint32_t *y) {
   int tid = threadIdx.x;
 
