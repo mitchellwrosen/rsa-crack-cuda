@@ -14,7 +14,7 @@ __device__ void cuSubtract(volatile uint32_t *x, volatile uint32_t *y, volatile 
  * Kernel function.
  * See "PARIS: A Parallel RSA-Prime Inspection Tool" by Joseph White
  */
-__global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
+__global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int tileRow, int tileCol, int tileDim, int numKeys) {
   /* shared memory for keys */
   __shared__ volatile uint32_t y[BLOCK_DIM][BLOCK_DIM][32];
   __shared__ volatile uint32_t z[BLOCK_DIM][BLOCK_DIM][32];
@@ -48,9 +48,8 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, size_
 }
 
 void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint16_t* d_notCoprime,
-    size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
-      cuda_factorKeys<<<gridDim, blockDim>>>(d_keys, d_notCoprime,
-          pitch, tileRow, tileCol, tileDim, numKeys);
+    int tileRow, int tileCol, int tileDim, int numKeys) {
+      cuda_factorKeys<<<gridDim, blockDim>>>(d_keys, d_notCoprime, tileRow, tileCol, tileDim, numKeys);
 }
 
 /**

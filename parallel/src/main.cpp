@@ -120,7 +120,8 @@ inline void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRo
     for (int j = i; j < TILE_DIM; ++j) {
       if (notCoprime[i/BLOCK_DIM * BLKS_PER_TILE + j/BLOCK_DIM] &
           (1 << ((i%BLOCK_DIM) * BLOCK_DIM + (j%BLOCK_DIM)))) {
-        cout << tileRow * TILE_DIM + i << " " << tileCol * TILE_DIM + j << endl;
+        cout << tileRow * TILE_DIM + i + 1 << " " << tileCol * TILE_DIM + j + 1 << endl;
+
         mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i].ints);
         mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j].ints);
 
@@ -130,7 +131,6 @@ inline void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRo
         rsa_compute_d(d1, n1, p, q1);
         rsa_compute_d(d2, n2, p, q2);
         // output d1,d2
-        //
       }
     }
   }
