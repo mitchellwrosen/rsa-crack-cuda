@@ -11,7 +11,7 @@ LDFLAGS=-L. -L/usr/local/cuda/lib -lcudart -lgmp -I.
 GPPFLAGS=-g -Wno-write-strings -I/usr/local/cuda/include
 else
 LDFLAGS=-L. -L/usr/local/cuda/lib64 -L/home/clupo/gmp/lib -lcudart -lgmp -I.
-GPPFLAGS=-O3 -g -Wno-write-strings -I/home/clupo/gmp/include -I/usr/local/cuda/include
+GPPFLAGS=-g -Wno-write-strings -I/home/clupo/gmp/include -I/usr/local/cuda/include
 endif
 
 all: main
