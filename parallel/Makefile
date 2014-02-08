@@ -16,13 +16,13 @@ endif
 
 all: main
 
-main: main.o bit_matrix.o integer.o
+main: main.o rsa.o integer.o
 	$(GPP) $(LDFLAGS) $^ -o $@
 
 main.o: $(SOURCEDIR)main.cpp
 	$(GPP) $(GPPFLAGS) -c $< -o $@
 
-bit_matrix.o: $(SOURCEDIR)bit_matrix.cpp
+rsa.o: $(SOURCEDIR)rsa.cpp
 	$(GPP) $(GPPFLAGS) -c $< -o $@
 
 integer.o: $(SOURCEDIR)integer.cu $(SOURCEDIR)integer.h
