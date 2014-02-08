@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
   integer *keys, *d_keys;
   uint16_t *notCoprime, *d_notCoprime;
 
-  size_t pitch = init(&keys, &notCoprime, &d_keys, &d_notCoprime, argv[1], numKeys);
+  init(&keys, &notCoprime, &d_keys, &d_notCoprime, argv[1], numKeys);
 
   dim3 gridDim(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
   dim3 blockDim(WARP_DIM, BLOCK_DIM, BLOCK_DIM);
@@ -61,19 +61,16 @@ int main(int argc, char **argv) {
    */
   for (int i = 0; i < num_tiles; ++i) {
     for (int j = i; j < num_tiles; ++j) {
-      cudaSafe(cudaMemset2D(d_notCoprime, pitch, 0, BLKS_PER_TILE * sizeof(uint16_t), BLKS_PER_TILE));
+      cudaSafe(cudaMemset(d_notCoprime, 0, BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t)));
 
-      cuda_wrapper(gridDim, blockDim, d_keys, d_notCoprime, pitch, i, j, TILE_DIM, numKeys);
+      cuda_wrapper(gridDim, blockDim, d_keys, d_notCoprime, i, j, TILE_DIM, numKeys);
       cudaSafe(cudaPeekAtLastError());
       cudaSafe(cudaDeviceSynchronize());
 
-      cudaSafe(cudaMemcpy2D(notCoprime,                        // dst
-                            BLKS_PER_TILE * sizeof(uint16_t),  // dst pitch
-                            d_notCoprime,                      // src
-                            pitch,                             // src pitch
-                            BLKS_PER_TILE * sizeof(uint16_t),  // width
-                            BLKS_PER_TILE,                     // height
-                            cudaMemcpyDeviceToHost));          // kind
+      cudaSafe(cudaMemcpy(notCoprime,
+                          d_notCoprime,
+                          BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t), 
+                          cudaMemcpyDeviceToHost));
 
       calculatePrivateKeys(keys, notCoprime, i, j);
     }
@@ -89,15 +86,14 @@ int main(int argc, char **argv) {
 
 /**
  * Perform boilerplate initialization: read keys from file, allocate
- * host/device keys, host/device notCoprime, memcpy keys to device. Return the
- * pitch of device bit matrix.
+ * host/device keys, host/device notCoprime, memcpy keys to device.
  */
-inline size_t init(integer** keys,
-                   uint16_t** notCoprime,
-                   integer** d_keys,
-                   uint16_t** d_notCoprime,
-                   const char* filename,
-                   const int numKeys) {
+inline init(integer** keys,
+            uint16_t** notCoprime,
+            integer** d_keys,
+            uint16_t** d_notCoprime,
+            const char* filename,
+            const int numKeys) {
   *keys = (integer*) malloc(numKeys * sizeof(integer));
   getKeysFromFile(filename, *keys, numKeys);
 
@@ -106,10 +102,7 @@ inline size_t init(integer** keys,
   cudaSafe(cudaMalloc((void **) d_keys, numKeys * sizeof(integer)));
   cudaSafe(cudaMemcpy(*d_keys, *keys, numKeys * sizeof(integer), cudaMemcpyHostToDevice));
 
-  size_t pitch;
-  cudaSafe(cudaMallocPitch((void **) d_notCoprime, &pitch, BLKS_PER_TILE * sizeof(uint16_t), BLKS_PER_TILE));
-
-  return pitch;
+  cudaSafe(cudaMalloc((void **) d_notCoprime, BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t)));
 }
 
 inline void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRow, int tileCol) {
