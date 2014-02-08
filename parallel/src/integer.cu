@@ -41,12 +41,13 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, size_
       if (__any(z[threadIdx.y][threadIdx.z][threadIdx.x])) {
         int notCoprimeBlockNdx = blockIdx.y * gridDim.x + blockIdx.x;
         notCoprime[notCoprimeBlockNdx] |= 1 << (threadIdx.y * BLOCK_DIM + threadIdx.z);
+        printf("cuda %d %d\n", keyX + 1, keyY + 1);
       }
     }
   }
 }
 
-void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint32_t* d_notCoprime,
+void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint16_t* d_notCoprime,
     size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
       cuda_factorKeys<<<gridDim, blockDim>>>(d_keys, d_notCoprime,
           pitch, tileRow, tileCol, tileDim, numKeys);

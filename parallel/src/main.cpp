@@ -7,7 +7,6 @@
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 
-#include "bit_matrix.h"
 #include "cuda_utils.h"
 #include "integer.h"
 #include "rsa.h"
@@ -73,7 +72,7 @@ int main(int argc, char **argv) {
                             d_notCoprime,                      // src
                             pitch,                             // src pitch
                             BLKS_PER_TILE * sizeof(uint16_t),  // width
-                            BLKS_PER_tiLE,                     // height
+                            BLKS_PER_TILE,                     // height
                             cudaMemcpyDeviceToHost));          // kind
 
       calculatePrivateKeys(keys, notCoprime, i, j);
@@ -108,7 +107,7 @@ inline size_t init(integer** keys,
   cudaSafe(cudaMemcpy(*d_keys, *keys, numKeys * sizeof(integer), cudaMemcpyHostToDevice));
 
   size_t pitch;
-  cudaSafe(cudaMallocPitch((void **) d_notCoprime, &pitch, BIT_MATRIX_WIDTH * sizeof(uint32_t), TILE_DIM));
+  cudaSafe(cudaMallocPitch((void **) d_notCoprime, &pitch, BLKS_PER_TILE * sizeof(uint16_t), BLKS_PER_TILE));
 
   return pitch;
 }
@@ -120,7 +119,8 @@ inline void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRo
   for (int i = 0; i < TILE_DIM-1; ++i) {
     for (int j = i; j < TILE_DIM; ++j) {
       if (notCoprime[i/BLOCK_DIM * BLKS_PER_TILE + j/BLOCK_DIM] &
-          (1 << (i%BLOCK_DIM) * BLOCK_DIM + (j%BLOCK_DIM))) {
+          (1 << ((i%BLOCK_DIM) * BLOCK_DIM + (j%BLOCK_DIM)))) {
+        cout << tileRow * TILE_DIM + i << " " << tileCol * TILE_DIM + j << endl;
         mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i].ints);
         mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j].ints);
 
@@ -130,6 +130,7 @@ inline void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRo
         rsa_compute_d(d1, n1, p, q1);
         rsa_compute_d(d2, n2, p, q2);
         // output d1,d2
+        //
       }
     }
   }
