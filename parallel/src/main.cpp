@@ -11,18 +11,13 @@
 #include "cuda_utils.h"
 #include "integer.h"
 
-#define FILENAME "../256-keys.txt"
 #define OUTPUT_FILENAME "result.out"
 
-#define NUM_KEYS 256
 #define TILE_DIM 512
-#define NUM_TILES (NUM_KEYS-1)/TILE_DIM+1
+#define NUM_TILES(N) (N-1)/TILE_DIM+1
 #define BIT_MATRIX_WIDTH (TILE_DIM-1)/32+1
 
 using namespace std;
-
-extern void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint32_t* d_notCoprime,
-    size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys);
 
 inline void getKeysFromFile(const char *filename, integer *keys, int num) {
   FILE *f = fopen(filename, "r");
@@ -37,25 +32,31 @@ inline void getKeysFromFile(const char *filename, integer *keys, int num) {
   fclose(f);
 }
 
-size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime);
-void calculatePrivateKeys(integer *array, const BitMatrix& notCoprime, int tileRow, int tileCol);
+inline void printUsage(char* progname);
+inline size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime, const char* filename, const int numKeys);
+inline void calculatePrivateKeys(integer *array, const BitMatrix& notCoprime, int tileRow, int tileCol);
 
-int main(int argc, char **args) {
+int main(int argc, char **argv) {
+  if (argc != 3)
+    printUsage(argv[0]);
+
+  int numKeys = atoi(argv[2]);
+
   integer *keys, *d_keys;
   uint32_t *d_notCoprime;
   BitMatrix notCoprime(TILE_DIM);
 
-  size_t pitch = init(&keys, &d_keys, &d_notCoprime);
+  size_t pitch = init(&keys, &d_keys, &d_notCoprime, argv[1], numKeys);
 
   dim3 gridDim(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
   dim3 blockDim(32, BLOCK_DIM, BLOCK_DIM);
-  int num_tiles = NUM_TILES;
+  int num_tiles = NUM_TILES(numKeys);
 
   for (int i = 0; i < num_tiles; ++i) {
     for (int j = i; j < num_tiles; ++j) {
       cudaSafe(cudaMemset2D(d_notCoprime, pitch, 0, BIT_MATRIX_WIDTH * sizeof(uint32_t), TILE_DIM));
 
-      cuda_wrapper(gridDim, blockDim, d_keys, d_notCoprime, pitch, i, j, TILE_DIM, NUM_KEYS);
+      cuda_wrapper(gridDim, blockDim, d_keys, d_notCoprime, pitch, i, j, TILE_DIM, numKeys);
       cudaSafe(cudaPeekAtLastError());
       cudaSafe(cudaDeviceSynchronize());
 
@@ -84,12 +85,12 @@ int main(int argc, char **args) {
  * host/device keys, device notPrime, memcpy keys to device. Return the pitch
  * of device bit matrix.
  */
-size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime) {
-  *keys = (integer*) malloc(NUM_KEYS * sizeof(integer));
-  getKeysFromFile(FILENAME, *keys, NUM_KEYS);
+inline size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime, const char* filename, const int numKeys) {
+  *keys = (integer*) malloc(numKeys * sizeof(integer));
+  getKeysFromFile(filename, *keys, numKeys);
 
-  cudaSafe(cudaMalloc((void **) d_keys, NUM_KEYS * sizeof(integer)));
-  cudaSafe(cudaMemcpy(*d_keys, *keys, NUM_KEYS * sizeof(integer), cudaMemcpyHostToDevice));
+  cudaSafe(cudaMalloc((void **) d_keys, numKeys * sizeof(integer)));
+  cudaSafe(cudaMemcpy(*d_keys, *keys, numKeys * sizeof(integer), cudaMemcpyHostToDevice));
 
   size_t pitch;
   cudaSafe(cudaMallocPitch((void **) d_notCoprime, &pitch, BIT_MATRIX_WIDTH * sizeof(uint32_t), TILE_DIM));
@@ -97,7 +98,7 @@ size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime) {
   return pitch;
 }
 
-void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int tileRow, int tileCol) {
+inline void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int tileRow, int tileCol) {
   for (int i = 0; i < notCoprime.size()-1; ++i) {
     for (int j = i; j < notCoprime.size(); ++j) {
       if (notCoprime.bitSet(i, j)) {
@@ -108,4 +109,9 @@ void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int tileRo
       }
     }
   }
+}
+
+inline void printUsage(char* progname) {
+  cerr << "Usage: " << progname << " keyfile numkeys" << endl;
+  exit(EXIT_FAILURE);
 }

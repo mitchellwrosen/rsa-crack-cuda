@@ -9,4 +9,6 @@
 
 typedef struct integer { uint32_t ints[N]; } integer;
 
+void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint32_t* d_notCoprime, size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys);
+
 #endif  // INTEGER_H_
