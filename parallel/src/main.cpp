@@ -10,6 +10,7 @@
 #include "bit_matrix.h"
 #include "cuda_utils.h"
 #include "integer.h"
+#include "rsa.h"
 
 #define OUTPUT_FILENAME "result.out"
 
@@ -106,13 +107,21 @@ inline size_t init(integer** keys, integer** d_keys, uint32_t** d_notCoprime, co
 }
 
 inline void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int tileRow, int tileCol) {
+  mpz_t n1, n2, p, q1, q2, d1, d2;
+  mpz_inits(n1, n2, p, q1, q2, d1, d2, '\0');
+
   for (int i = 0; i < notCoprime.size()-1; ++i) {
     for (int j = i; j < notCoprime.size(); ++j) {
       if (notCoprime.bitSet(i, j)) {
-        integer key1 = keys[tileRow * TILE_DIM + i];
-        integer key2 = keys[tileCol * TILE_DIM + j];
+        mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i].ints);
+        mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j].ints);
 
-        // calculate key
+        mpz_gcd(p, n1, n2);
+        mpz_divexact(q1, n1, p);
+        mpz_divexact(q2, n2, p);
+        rsa_compute_d(d1, n1, p, q1);
+        rsa_compute_d(d2, n2, p, q2);
+        // output d1,d2
       }
     }
   }
