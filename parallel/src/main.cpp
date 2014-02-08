@@ -113,8 +113,8 @@ inline void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int
   for (int i = 0; i < notCoprime.size()-1; ++i) {
     for (int j = i; j < notCoprime.size(); ++j) {
       if (notCoprime.bitSet(i, j)) {
-        integerToMpz(n1, keys[tileRow * TILE_DIM + i]);
-        integerToMpz(n2, keys[tileCol * TILE_DIM + j]);
+        mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i].ints);
+        mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j].ints);
 
         mpz_gcd(p, n1, n2);
         mpz_divexact(q1, n1, p);
@@ -124,14 +124,6 @@ inline void calculatePrivateKeys(integer* keys, const BitMatrix& notCoprime, int
         // output d1,d2
       }
     }
-  }
-}
-
-void integerToMpz(mpz_t output, integer input) {
-  mpz_add_ui(output, output, input[N-1]);
-  for (int i = N-2; i >= 0; --i) {
-    mpz_mul_2exp(output, output, 32);      // output <<= 32
-    mpz_add_ui(output, output, input[i]);  // set low word
   }
 }
 
