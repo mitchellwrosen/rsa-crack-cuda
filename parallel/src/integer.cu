@@ -40,6 +40,7 @@ __global__ void cuda_factorKeys(const integer *keys, uint32_t *notCoprime, size_
         /* int notCoprimeOffset = notCoprimeKeyY % 32; */
 
         /* notCoprimeRow[notCoprimeCol] |= 1 << notCoprimeOffset; */
+        /* printf("%d %d\n", keyX + 1, keyY + 1); */
       }
     }
   }

@@ -4,13 +4,12 @@ NVCC=nvcc
 GPP=g++
 SOURCEDIR=src/
 
+NVFLAGS=-O3 -g -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35
 
 ifeq ($(UNAME), Darwin)
-NVFLAGS=-O3 -g -arch=sm_30
 LDFLAGS=-L. -L/usr/local/cuda/lib -lcudart -lgmp -I.
 GPPFLAGS=-O3 -g -Wno-write-strings -I/usr/local/cuda/include
 else
-NVFLAGS=-O3 -g -arch=sm_20
 LDFLAGS=-L. -L/usr/local/cuda/lib64 -L/home/clupo/gmp/lib -lcudart -lgmp -I.
 GPPFLAGS=-O3 -g -Wno-write-strings -I/home/clupo/gmp/include -I/usr/local/cuda/include
 endif
