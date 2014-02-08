@@ -15,7 +15,7 @@ class BitMatrix {
 
   int size() const      { return size_; }
   int pitch() const     { return pitch_;  }
-  int32_t* data() const { return data_;   }
+  uint32_t* data() const { return data_;   }
 
  private:
   int size_;
@@ -23,7 +23,7 @@ class BitMatrix {
   int actual_width_; // in words
   size_t pitch_;     // in bytes
 
-  int32_t* data_;
+  uint32_t* data_;
 };
 
 #endif  // BIT_MATRIX_H_

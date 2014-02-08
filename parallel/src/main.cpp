@@ -11,11 +11,11 @@
 #include "cuda_utils.h"
 #include "integer.h"
 
-#define FILENAME "keys.txt"
+#define FILENAME "../256-keys.txt"
 #define OUTPUT_FILENAME "result.out"
 
-#define NUM_KEYS 200000
-#define TILE_DIM 1000
+#define NUM_KEYS 256
+#define TILE_DIM 512
 #define NUM_TILES (NUM_KEYS-1)/TILE_DIM+1
 #define BIT_MATRIX_WIDTH (TILE_DIM-1)/32+1
 
@@ -50,6 +50,7 @@ int main(int argc, char **args) {
   dim3 gridDim(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
   dim3 blockDim(32, BLOCK_DIM, BLOCK_DIM);
   int num_tiles = NUM_TILES;
+
   for (int i = 0; i < num_tiles; ++i) {
     for (int j = i; j < num_tiles; ++j) {
       cudaSafe(cudaMemset2D(d_notCoprime, pitch, 0, BIT_MATRIX_WIDTH * sizeof(uint32_t), TILE_DIM));
