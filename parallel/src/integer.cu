@@ -12,35 +12,35 @@ __device__ void cuSubtract(volatile uint32_t *x, volatile uint32_t *y, volatile 
 
 /**
  * Kernel function.
- * See "PARIS: A Parallel RSA-Prime Inspection Tool"
- * Author: Joseph White
+ * See "PARIS: A Parallel RSA-Prime Inspection Tool" by Joseph White
  */
-__global__ void cuda_factorKeys(const integer *keys, uint32_t *notCoprime, size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
-  __shared__ volatile uint32_t x[BLOCK_DIM][BLOCK_DIM][32];
+__global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, size_t pitch, int tileRow, int tileCol, int tileDim, int numKeys) {
+  /* shared memory for keys */
   __shared__ volatile uint32_t y[BLOCK_DIM][BLOCK_DIM][32];
+  __shared__ volatile uint32_t z[BLOCK_DIM][BLOCK_DIM][32];
 
+  /* determine key indexes */
   int keyX = tileCol * tileDim + blockIdx.x * BLOCK_DIM + threadIdx.y;
   int keyY = tileRow * tileDim + blockIdx.y * BLOCK_DIM + threadIdx.z;
 
+  /* only continue w/ warp if we need to to run this comparison */
   if (keyX < numKeys && keyY < numKeys && keyX < keyY) {
-    x[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyX].ints[threadIdx.x];
-    y[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyY].ints[threadIdx.x];
+    /* each thread loads its corresponding int into shared memory */
+    y[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyX].ints[threadIdx.x];
+    z[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyY].ints[threadIdx.x];
 
-    gcd(x[threadIdx.y][threadIdx.z], y[threadIdx.y][threadIdx.z]);
+    /* run gcd */
+    gcd(y[threadIdx.y][threadIdx.z], z[threadIdx.y][threadIdx.z]);
 
     if (threadIdx.x == 31) {
-      y[threadIdx.y][threadIdx.z][threadIdx.x] -= 1;
+      /* turn gcd=1 to 0 */
+      z[threadIdx.y][threadIdx.z][threadIdx.x] -= 1;
 
-      if (__any(y[threadIdx.y][threadIdx.z][threadIdx.x])) {
-        /* int notCoprimeKeyX = keyX - tileCol * tileDim; */
-        /* int notCoprimeKeyY = keyY - tileRow * tileDim; */
-
-        /* uint32_t *notCoprimeRow = (uint32_t *) ((char *) notCoprime + notCoprimeKeyX * pitch); */
-        /* int notCoprimeCol = notCoprimeKeyY / 32; */
-        /* int notCoprimeOffset = notCoprimeKeyY % 32; */
-
-        /* notCoprimeRow[notCoprimeCol] |= 1 << notCoprimeOffset; */
-        /* printf("%d %d\n", keyX + 1, keyY + 1); */
+      /* check if any ints in the warp are > 0, which means gcd > 1
+       * update notCoprime */
+      if (__any(z[threadIdx.y][threadIdx.z][threadIdx.x])) {
+        int notCoprimeBlockNdx = blockIdx.y * gridDim.x + blockIdx.x;
+        notCoprime[notCoprimeBlockNdx] |= 1 << (threadIdx.y * BLOCK_DIM + threadIdx.z);
       }
     }
   }
