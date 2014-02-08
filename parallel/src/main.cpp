@@ -37,7 +37,7 @@ inline void getKeysFromFile(const char *filename, integer *keys, int num) {
 }
 
 inline void printUsage(char* progname);
-inline size_t init(integer** keys, uint16_t** notCoprime, integer** d_keys, uint16_t** d_notCoprime, const char* filename, const int numKeys);
+inline void init(integer** keys, uint16_t** notCoprime, integer** d_keys, uint16_t** d_notCoprime, const char* filename, const int numKeys);
 inline void calculatePrivateKeys(integer *array, uint16_t* notCoprime, int tileRow, int tileCol);
 
 int main(int argc, char **argv) {
@@ -88,7 +88,7 @@ int main(int argc, char **argv) {
  * Perform boilerplate initialization: read keys from file, allocate
  * host/device keys, host/device notCoprime, memcpy keys to device.
  */
-inline init(integer** keys,
+inline void init(integer** keys,
             uint16_t** notCoprime,
             integer** d_keys,
             uint16_t** d_notCoprime,
