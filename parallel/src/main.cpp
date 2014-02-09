@@ -18,6 +18,10 @@
 
 using namespace std;
 
+
+static int X_MASKS[BLOCK_DIM] = { 0x1111, 0x2222, 0x4444, 0x8888 };
+static int Y_MASKS[BLOCK_DIM] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
 /**
  * Helper function to read keys from txt file using GMP library
  */
@@ -110,24 +114,32 @@ void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRow, int 
   mpz_t n1, n2, p, q1, q2, d1, d2;
   mpz_inits(n1, n2, p, q1, q2, d1, d2, NULL);
 
-  for (int i = 0; i < TILE_DIM-1; ++i) {
-    for (int j = i+1; j < TILE_DIM; ++j) {
-      if (notCoprime[i/BLOCK_DIM * BLKS_PER_TILE + j/BLOCK_DIM] &
-          (1 << ((i%BLOCK_DIM) * BLOCK_DIM + (j%BLOCK_DIM)))) {
-        mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i].ints);
-        mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j].ints);
+  for (int i = 0; i < BLKS_PER_TILE; ++i) {
+    for (int j = 0; j < BLKS_PER_TILE; ++j) {
+      uint16_t notCoprimeBlock = notCoprime[i * BLKS_PER_TILE + j];
 
-        mpz_gcd(p, n1, n2);
-        mpz_divexact(q1, n1, p);
-        mpz_divexact(q2, n2, p);
-        rsa_compute_d(d1, n1, p, q1);
-        rsa_compute_d(d2, n2, p, q2);
+      if (notCoprimeBlock) {
+        for (int y = 0; y < BLOCK_DIM; ++y) {
+          if (notCoprimeBlock & Y_MASKS[y]) {
+            for (int x = 0; x < BLOCK_DIM; ++x) {
+              if (notCoprimeBlock & Y_MASKS[y] & X_MASKS[x]) {
+                mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i * BLOCK_DIM + y].ints);
+                mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j * BLOCK_DIM + x].ints);
 
-        mpz_out_str(stream, 10, n1);
-        fputc('\n', stream);
-        mpz_out_str(stream, 10, n2);
-        fputc('\n', stream);
-        // output d1,d2
+                mpz_gcd(p, n1, n2);
+                mpz_divexact(q1, n1, p);
+                mpz_divexact(q2, n2, p);
+                rsa_compute_d(d1, n1, p, q1);
+                rsa_compute_d(d2, n2, p, q2);
+
+                mpz_out_str(stream, 10, n1);
+                fputc('\n', stream);
+                mpz_out_str(stream, 10, n2);
+                fputc('\n', stream);
+              }
+            }
+          }
+        }
       }
     }
   }
