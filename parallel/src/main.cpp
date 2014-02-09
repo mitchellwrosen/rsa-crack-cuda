@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 
       cudaSafe(cudaMemcpy(notCoprime,
                           d_notCoprime,
-                          BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t), 
+                          BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t),
                           cudaMemcpyDeviceToHost));
 
       calculatePrivateKeys(keys, notCoprime, i, j, outputStream);
@@ -80,6 +80,7 @@ int main(int argc, char **argv) {
   cudaSafe(cudaFree(d_notCoprime));
 
   free(keys);
+  free(notCoprime);
 
   return 0;
 }
