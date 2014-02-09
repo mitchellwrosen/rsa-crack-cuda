@@ -24,7 +24,7 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int t
   int keyY = tileRow * tileDim + blockIdx.y * BLOCK_DIM + threadIdx.z;
 
   /* only continue w/ warp if we need to to run this comparison */
-  if (keyX < numKeys && keyY < numKeys && keyX < keyY) {
+  if (keyX < numKeys && keyY < numKeys && keyX > keyY) {
     /* each thread loads its corresponding int into shared memory */
     y[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyX].ints[threadIdx.x];
     z[threadIdx.y][threadIdx.z][threadIdx.x] = keys[keyY].ints[threadIdx.x];
@@ -40,8 +40,7 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int t
        * update notCoprime */
       if (__any(z[threadIdx.y][threadIdx.z][threadIdx.x])) {
         int notCoprimeBlockNdx = blockIdx.y * gridDim.x + blockIdx.x;
-        notCoprime[notCoprimeBlockNdx] |= 1 << (threadIdx.y * BLOCK_DIM + threadIdx.z);
-        printf("cuda %d %d\n", keyX + 1, keyY + 1);
+        notCoprime[notCoprimeBlockNdx] |= 1 << threadIdx.z * BLOCK_DIM + threadIdx.y;
       }
     }
   }

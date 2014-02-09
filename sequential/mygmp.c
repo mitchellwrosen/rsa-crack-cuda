@@ -51,7 +51,7 @@ mpz_t* mpz_reads(const char* path, int n) {
 }
 
 size_t mpz_fread(FILE* stream, mpz_t n) {
-  return mpz_inp_raw(n, stream);
+  return mpz_inp_str(n, stream, 10);
 }
 
 size_t mpz_fwrite(FILE* stream, const mpz_t n) {
