@@ -10,3 +10,12 @@ make clean
 
 Performance
 CPU time on 255x10:/tmp -- 3636.81s
+
+Tonight: code, keys
+Wed: analysis
+  performane charts
+  cpu vs gpu
+  whatever keysets completed
+  nvprof output
+  discussion of "why"
+  how to improve?
