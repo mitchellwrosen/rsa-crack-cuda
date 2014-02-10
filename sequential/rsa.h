@@ -11,10 +11,15 @@ int rsa_keygen512(mpz_t n, mpz_t e, mpz_t d);
 // p and q of n.
 int rsa_compute_keys(mpz_t e, mpz_t d, const mpz_t n, const mpz_t p, const mpz_t q);
 
+// Compute private key d, given n, p, and q. Assume e = 2^16+1
+int rsa_compute_d(mpz_t d, const mpz_t n, const mpz_t p, const mpz_t q);
+
 // c = m^e mod n
 void rsa_encrypt(mpz_t c, const mpz_t m, const mpz_t e, const mpz_t n);
 
 // m = c^d mod n
 void rsa_decrypt(mpz_t m, const mpz_t c, const mpz_t d, const mpz_t n);
+
+void rsa_phi(mpz_t phi_n, const mpz_t p, const mpz_t q);
 
 #endif  // RSA_H_

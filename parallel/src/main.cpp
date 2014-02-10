@@ -23,6 +23,7 @@ static int Y_MASKS[BLOCK_DIM] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
 
 static int *cracked = NULL;
 static int crackedLen = 0;
+static mpz_t n1, n2, p, q1, q2, d1, d2;
 
 inline bool checkIfCrackedAlready(int n) {
   for (int i = 0; i < crackedLen; ++i) {
@@ -63,6 +64,7 @@ int main(int argc, char **argv) {
   uint16_t *notCoprime, *d_notCoprime;
 
   cracked = (int *) malloc(numKeys * sizeof(int));
+  mpz_inits(n1, n2, p, q1, q2, d1, d2, NULL);
 
   init(&keys, &notCoprime, &d_keys, &d_notCoprime, argv[1], numKeys);
 
@@ -100,6 +102,9 @@ int main(int argc, char **argv) {
   free(notCoprime);
   free(cracked);
 
+  if (argc == 4)
+    fclose(outputStream);
+
   return 0;
 }
 
@@ -125,9 +130,6 @@ inline void init(integer** keys,
 }
 
 void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRow, int tileCol, FILE *stream) {
-  mpz_t n1, n2, p, q1, q2, d1, d2;
-  mpz_inits(n1, n2, p, q1, q2, d1, d2, NULL);
-
   for (int i = 0; i < BLKS_PER_TILE; ++i) {
     for (int j = 0; j < BLKS_PER_TILE; ++j) {
       uint16_t notCoprimeBlock = notCoprime[i * BLKS_PER_TILE + j];

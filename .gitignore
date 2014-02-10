@@ -1,7 +1,5 @@
 *.gch
 *.o
-*keys.txt
 main
-result.out
 tags
 .srclist

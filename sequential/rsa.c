@@ -37,6 +37,20 @@ void rsa_generate_npq(mpz_t n, mpz_t p, mpz_t q, mp_bitcnt_t bitcount) {
   mpz_mul(n, p, q);
 }
 
+int rsa_compute_d(mpz_t d, const mpz_t n, const mpz_t p, const mpz_t q) {
+  mpz_t e, phi_n, gcd;
+  mpz_inits(e, phi_n, gcd, '\0');
+
+  rsa_phi(phi_n, p, q);
+  mpz_set_ui(e, 65537);
+
+  if (mpz_invert(d, e, phi_n) == 0)
+    exit(EXIT_FAILURE);
+
+  mpz_clears(phi_n, gcd, '\0');
+  return 0;
+}
+
 
 int rsa_compute_keys(mpz_t e, mpz_t d, const mpz_t n, const mpz_t p, const mpz_t q) {
   mpz_t phi_n, gcd;
