@@ -62,7 +62,7 @@ int main(int argc, char **argv) {
   integer *keys, *d_keys;
   uint16_t *notCoprime, *d_notCoprime;
 
-  cracked = (int *) malloc(1000 * sizeof(int));
+  cracked = (int *) malloc(numKeys * sizeof(int));
 
   init(&keys, &notCoprime, &d_keys, &d_notCoprime, argv[1], numKeys);
 
