@@ -46,7 +46,7 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int t
   }
 }
 
-void cuda_wrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint16_t* d_notCoprime,
+void cudaWrapper(dim3 gridDim, dim3 blockDim, integer* d_keys, uint16_t* d_notCoprime,
     int tileRow, int tileCol, int tileDim, int numKeys) {
       cuda_factorKeys<<<gridDim, blockDim>>>(d_keys, d_notCoprime, tileRow, tileCol, tileDim, numKeys);
 }

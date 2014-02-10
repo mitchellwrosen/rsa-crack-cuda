@@ -18,9 +18,20 @@
 
 using namespace std;
 
-
 static int X_MASKS[BLOCK_DIM] = { 0x1111, 0x2222, 0x4444, 0x8888 };
 static int Y_MASKS[BLOCK_DIM] = { 0x000F, 0x00F0, 0x0F00, 0xF000 };
+
+static int *cracked = NULL;
+static int crackedLen = 0;
+
+inline bool checkIfCrackedAlready(int n) {
+  for (int i = 0; i < crackedLen; ++i) {
+    if (n == cracked[i])
+      return true;
+  }
+
+  return false;
+}
 
 /**
  * Helper function to read keys from txt file using GMP library
@@ -51,6 +62,8 @@ int main(int argc, char **argv) {
   integer *keys, *d_keys;
   uint16_t *notCoprime, *d_notCoprime;
 
+  cracked = (int *) malloc(1000 * sizeof(int));
+
   init(&keys, &notCoprime, &d_keys, &d_notCoprime, argv[1], numKeys);
 
   dim3 gridDim(TILE_DIM / BLOCK_DIM, TILE_DIM / BLOCK_DIM);
@@ -67,7 +80,7 @@ int main(int argc, char **argv) {
     for (int j = i; j < num_tiles; ++j) {
       cudaSafe(cudaMemset(d_notCoprime, 0, BLKS_PER_TILE * BLKS_PER_TILE * sizeof(uint16_t)));
 
-      cuda_wrapper(gridDim, blockDim, d_keys, d_notCoprime, i, j, TILE_DIM, numKeys);
+      cudaWrapper(gridDim, blockDim, d_keys, d_notCoprime, i, j, TILE_DIM, numKeys);
       cudaSafe(cudaPeekAtLastError());
       cudaSafe(cudaDeviceSynchronize());
 
@@ -85,6 +98,7 @@ int main(int argc, char **argv) {
 
   free(keys);
   free(notCoprime);
+  free(cracked);
 
   return 0;
 }
@@ -123,19 +137,39 @@ void calculatePrivateKeys(integer* keys, uint16_t* notCoprime, int tileRow, int 
           if (notCoprimeBlock & Y_MASKS[y]) {
             for (int x = 0; x < BLOCK_DIM; ++x) {
               if (notCoprimeBlock & Y_MASKS[y] & X_MASKS[x]) {
-                mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[tileRow * TILE_DIM + i * BLOCK_DIM + y].ints);
-                mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[tileCol * TILE_DIM + j * BLOCK_DIM + x].ints);
+                int n1Ndx = tileRow * TILE_DIM + i * BLOCK_DIM + y;
+                int n2Ndx = tileCol * TILE_DIM + j * BLOCK_DIM + x;
+                bool crackedN1 = checkIfCrackedAlready(n1Ndx);
+                bool crackedN2 = checkIfCrackedAlready(n2Ndx);
 
-                mpz_gcd(p, n1, n2);
-                mpz_divexact(q1, n1, p);
-                mpz_divexact(q2, n2, p);
-                rsa_compute_d(d1, n1, p, q1);
-                rsa_compute_d(d2, n2, p, q2);
+                if (!crackedN1 || !crackedN2) {
+                  mpz_import(n1, N, 1, sizeof(uint32_t), 0, 0, keys[n1Ndx].ints);
+                  mpz_import(n2, N, 1, sizeof(uint32_t), 0, 0, keys[n2Ndx].ints);
 
-                mpz_out_str(stream, 10, n1);
-                fputc('\n', stream);
-                mpz_out_str(stream, 10, n2);
-                fputc('\n', stream);
+                  mpz_gcd(p, n1, n2);
+
+                  if (!crackedN1) {
+                    mpz_divexact(q1, n1, p);
+                    rsa_compute_d(d1, n1, p, q1);
+                    mpz_out_str(stream, 10, n1);
+                    fputc(':', stream);
+                    mpz_out_str(stream, 10, d1);
+                    fputc('\n', stream);
+
+                    cracked[crackedLen++] = n1Ndx;
+                  }
+
+                  if (!crackedN2) {
+                    mpz_divexact(q2, n2, p);
+                    rsa_compute_d(d2, n2, p, q2);
+                    mpz_out_str(stream, 10, n2);
+                    fputc(':', stream);
+                    mpz_out_str(stream, 10, d2);
+                    fputc('\n', stream);
+
+                    cracked[crackedLen++] = n2Ndx;
+                  }
+                }
               }
             }
           }
