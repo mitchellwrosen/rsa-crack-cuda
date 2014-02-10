@@ -1,0 +1,12 @@
+Mitchell Rosen, Christopher Wu
+
+To run:
+make
+./main keyfile numkeys [outputfile]
+
+To clean:
+make clean
+
+
+Performance
+CPU time on 255x10:/tmp -- 3636.81s
