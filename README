@@ -9,6 +9,6 @@ make clean
 
 Performance
 CPU time on 255x10:/tmp -- 3636.81s
-GPU time on 255s10:/tmp -- 1161.11s
+GPU time on 255x10:/tmp -- 1161.11s
 
 Note: cpucracked-20K.txt and gpucracked-20K.txt are sorted
