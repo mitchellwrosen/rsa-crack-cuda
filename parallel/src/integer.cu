@@ -15,7 +15,11 @@ __device__ void cuSubtract(volatile uint32_t *x, volatile uint32_t *y, volatile 
  * See "PARIS: A Parallel RSA-Prime Inspection Tool" by Joseph White
  */
 __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int tileRow, int tileCol, int tileDim, int numKeys) {
-  /* shared memory for keys */
+  /**
+   * shared memory for keys
+   * each block has 16 warps, for 16 gcd calculations
+   * create 2 blocks for shared memory with same dimensions as block size to store the keys in
+   */
   __shared__ volatile uint32_t y[BLOCK_DIM][BLOCK_DIM][32];
   __shared__ volatile uint32_t z[BLOCK_DIM][BLOCK_DIM][32];
 
@@ -36,7 +40,7 @@ __global__ void cuda_factorKeys(const integer *keys, uint16_t *notCoprime, int t
       /* turn gcd=1 to 0 */
       z[threadIdx.y][threadIdx.z][threadIdx.x] -= 1;
 
-      /* check if any ints in the warp are > 0, which means gcd > 1
+      /* check if any ints in the warp's shared memory are > 0, which means gcd > 1
        * update notCoprime */
       if (__any(z[threadIdx.y][threadIdx.z][threadIdx.x])) {
         int notCoprimeBlockNdx = blockIdx.y * gridDim.x + blockIdx.x;
@@ -88,6 +92,7 @@ __device__ void shiftL1(volatile uint32_t *x) {
 }
 
 __device__ int geq(volatile uint32_t *x, volatile uint32_t *y) {
+  /* shared memory to hold the position at which the int of x >= int of y */
   __shared__ unsigned int pos[BLOCK_DIM][BLOCK_DIM];
   int tid = threadIdx.x;
 
@@ -101,23 +106,28 @@ __device__ int geq(volatile uint32_t *x, volatile uint32_t *y) {
 }
 
 __device__ void cuSubtract(volatile uint32_t *x, volatile uint32_t *y, volatile uint32_t *z) {
+  /* shared memory to hold underflow flags */
   __shared__ unsigned char s_borrow[BLOCK_DIM][BLOCK_DIM][32];
   unsigned char *borrow = s_borrow[threadIdx.y][threadIdx.z];
   int tid = threadIdx.x;
 
+  /* set LSB's borrow to 0 */
   if (tid == 0)
     borrow[31] = 0;
 
   uint32_t t;
   t = x[tid] - y[tid];
 
+  /* set the previous int's underflow flag if the subtraction answer is bigger than the subtractee */
   if(tid)
     borrow[tid - 1] = (t > x[tid]);
 
+  /* keep processing until there's no flags */
   while (__any(borrow[tid])) {
     if (borrow[tid])
       t--;
 
+    /* have to set flag if the new sub answer is 0xFFFFFFFF becuase of an underflow */
     if (tid)
       borrow[tid - 1] = (t == 0xFFFFFFFFu && borrow[tid]);
   }
